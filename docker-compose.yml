@@ -1,0 +1,14 @@
+#version: '3.8'
+
+services:
+  clarity:
+    build: .
+    container_name: clarity-app
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    stdin_open: true
+    tty: true

@@ -1,0 +1,35 @@
+# Environment variables - NEVER commit your API key
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual environment
+venv/
+.venv/
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Output files
+parsed_output.json
+*.log
+
+# Docker
+.docker/
+
+# Generated output files
+parsed_output.json
+validation_output.json
+session_output.json
+
+# ChromaDB local database
+chroma_db/

@@ -1,0 +1,19 @@
+# Clarity — Git line ending configuration
+# Forces LF for all text files in the repository
+
+* text=auto eol=lf
+
+# Explicitly declare text files
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.txt   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.sh    text eol=lf
+
+# Declare binary files — never convert
+*.png   binary
+*.jpg   binary
+*.mp3   binary
+*.pdf   binary
