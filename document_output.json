@@ -1,0 +1,159 @@
+{
+  "document": {
+    "text": "REQUIREMENTS DOCUMENT \u2014 E-COMMERCE PLATFORM\n\n    1. User Registration\n    Users should be able to register with email\n    and password. The system should send a\n    verification email. Users can also register\n    with Google or Facebook.\n\n    2. Product Catalog\n    The platform should display products with\n    images, descriptions and prices. Users can\n    filter by category, price range and rating.\n    Search should be fast and accurate.\n\n    3. Shopping Cart\n    Users can add products to cart. Cart should\n    persist when user logs out. Users can apply\n    discount codes. Checkout should support\n    credit card and PayPal.",
+    "source": "pasted_text",
+    "type": "text",
+    "pages": 1,
+    "method": "direct_paste",
+    "metadata": {
+      "input_method": "direct_paste"
+    }
+  },
+  "requirements": [
+    {
+      "id": "ee0394f88909",
+      "project": "clarity-demo",
+      "status": "NEEDS_REVIEW",
+      "ready_for_development": false,
+      "testability_score": 5,
+      "user_story": "As a shopper, I want to register, browse products, manage a cart, and complete a purchase, so that I can discover and buy products on the platform efficiently and securely",
+      "acceptance_criteria": [
+        "Given a new visitor is on the registration page, When they submit a valid email and password that meets minimum requirements, Then an account is created with status 'unverified' and a verification email is sent to the provided address within 60 seconds",
+        "Given a verification email has been sent, When the user clicks the verification link, Then their account status is updated to 'verified' and they are redirected to the platform",
+        "Given a new visitor is on the registration page, When they click 'Register with Google' and complete Google OAuth flow, Then an account is created using their Google profile email and they are logged in without needing email verification",
+        "Given a new visitor is on the registration page, When they click 'Register with Facebook' and complete Facebook OAuth flow, Then an account is created using their Facebook profile email and they are logged in without needing email verification",
+        "Given a verified user is browsing the catalog, When a product listing page loads, Then each product displays at least one image, a text description, and a price with currency symbol",
+        "Given a user is on the catalog page, When they select a category filter, Then only products belonging to that category are displayed and the result count updates accordingly",
+        "Given a user is on the catalog page, When they set a minimum and maximum price range filter, Then only products whose price falls within that inclusive range are returned",
+        "Given a user is on the catalog page, When they apply a rating filter, Then only products at or above the selected star rating threshold are displayed",
+        "Given a user is on the catalog page, When they enter a search query and submit, Then matching results are returned in under 2 seconds and results are ranked by relevance to the query term",
+        "Given a logged-in or guest user is viewing a product page, When they click 'Add to Cart', Then the product and selected quantity are added to their cart and the cart item count in the header increments",
+        "Given a logged-in user has items in their cart, When they log out and then log back in, Then the cart contains the same items with the same quantities as before logout",
+        "Given a user is in the checkout flow, When they enter a valid discount code and apply it, Then the order subtotal is reduced by the correct discount amount and the new total is displayed",
+        "Given a user is in the checkout flow, When they enter an invalid or expired discount code, Then an error message is displayed and the subtotal remains unchanged",
+        "Given a user is at the payment step of checkout, When they enter valid credit card details and confirm, Then the payment is processed and an order confirmation with order ID is displayed",
+        "Given a user is at the payment step of checkout, When they select PayPal and complete the PayPal authentication flow, Then the payment is processed via PayPal and an order confirmation with order ID is displayed"
+      ],
+      "ambiguities": [
+        "'Fast and accurate' search is undefined \u2014 what is the maximum acceptable response time and how is relevance ranked?",
+        "'Password minimum requirements' are not specified \u2014 what is the minimum length, complexity, or entropy required?",
+        "It is unclear whether guest (unauthenticated) users can add to cart and whether that cart persists across sessions",
+        "'Cart should persist when user logs out' \u2014 undefined persistence duration: does this mean forever, 30 days, or until the session expires?",
+        "'Discount codes' \u2014 it is unspecified whether codes are percentage-based, fixed-amount, or both, and whether they can stack",
+        "Social OAuth accounts: if the Google or Facebook email already exists as a standard account, should the system merge, reject, or link the accounts?",
+        "Email verification: are users allowed to browse or purchase before verifying their email?",
+        "Product ratings: does the rating displayed come from user reviews on this platform or an external source, and is there a minimum review count threshold?",
+        "'Accurate' search is subjective \u2014 is fuzzy matching, typo tolerance, or synonym expansion expected?",
+        "Checkout credit card processing: which card networks must be supported (Visa, Mastercard, Amex, etc.)?",
+        "Are there inventory or stock checks when adding to cart or only at checkout?"
+      ],
+      "blocking_issues": [
+        "Password minimum requirements are completely undefined \u2014 no length, complexity, or character rules specified, making registration validation tests unwritable",
+        "Guest cart behavior is unspecified \u2014 it is unknown whether unauthenticated users can add to cart at all, which affects at least 3 acceptance criteria",
+        "OAuth email conflict resolution is undefined \u2014 if a Google or Facebook email already exists as a standard account, the system behavior is unknown, making this an untestable and potentially data-corrupting path",
+        "Discount code type is unspecified \u2014 whether codes are percentage-based, fixed-amount, or both is required before any discount calculation test can be written with a pass/fail threshold",
+        "Email verification gate is undefined \u2014 whether unverified users can browse or purchase is a critical business rule that changes the entire access control test matrix"
+      ],
+      "clarification_questions": [
+        {
+          "question": "What are the exact password minimum requirements for registration? Please specify minimum character length, whether uppercase, lowercase, numeric, and special characters are required, and whether there is a maximum length.",
+          "why_it_matters": "Without these rules, it is impossible to define 'valid' vs 'invalid' password test cases for the registration acceptance criteria, blocking all registration validation tests.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "If a user attempts to register with Google or Facebook OAuth and the email from that provider already exists as a standard email/password account on the platform, what should the system do \u2014 (a) merge the accounts and allow OAuth login, (b) reject the OAuth registration and show an error, or (c) create a separate duplicate account?",
+          "why_it_matters": "Without this rule, a tester cannot determine whether this flow is a success or failure, and incorrect implementation could result in duplicate accounts or unauthorized account access.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "Can a guest user (not logged in) add products to a cart? If yes, does that cart persist if the guest closes the browser and returns, and for how long?",
+          "why_it_matters": "The acceptance criteria mention 'logged-in or guest user' adding to cart but cart persistence criteria only address logged-in users. If guest carts are supported, persistence, storage mechanism, and merge-on-login behavior all require separate test cases.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "When a logged-in user's cart is said to persist after logout and re-login, what is the maximum duration of that persistence? For example, is the cart available after 1 day, 30 days, 1 year, or indefinitely?",
+          "why_it_matters": "Without a defined duration, it is impossible to write a time-based persistence test or confirm when a cart expiry is a bug versus expected behavior.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "What types of discount codes must be supported \u2014 percentage-off (e.g. 20%), fixed-amount-off (e.g. $10 off), or both? Can multiple discount codes be applied to a single order simultaneously?",
+          "why_it_matters": "The discount calculation in the acceptance criteria cannot be verified without knowing whether to expect a percentage reduction or a flat deduction, and stacking behavior doubles the test matrix if allowed.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "Are users with an 'unverified' account status permitted to browse the product catalog, add items to cart, and complete a purchase before clicking the verification link in their email?",
+          "why_it_matters": "This determines whether verification is a hard gate for commerce flows or only an account hygiene step. If unverified users are blocked from purchasing, entire checkout test paths must include verification as a precondition.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "What is the maximum acceptable page load time in milliseconds for a product listing page, and is there a defined threshold for how many products can appear per page?",
+          "why_it_matters": "The catalog browsing criteria have no performance threshold beyond the 2-second search result rule. Without a load time SLA, performance tests for the catalog have no pass/fail boundary.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "For the search feature, should the system support fuzzy matching or typo tolerance \u2014 for example, should a search for 'sneeker' return results for 'sneaker'? Is synonym expansion expected, such as 'sofa' returning 'couch' results?",
+          "why_it_matters": "If fuzzy matching is expected and not implemented, it is a bug. If it is not expected and implemented anyway, it may cause false positives in search results. Test cases for relevance ranking cannot be written without knowing the matching algorithm.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "How is 'relevance ranking' defined for search results? For example, should exact title matches rank above description matches, and should newer products rank above older ones when relevance scores are equal?",
+          "why_it_matters": "The acceptance criteria state results must be 'ranked by relevance' but without a defined ranking algorithm or tiebreaker rules, there is no objective way to assert whether the order of search results is correct or incorrect.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "Is there a stock or inventory check when a user clicks 'Add to Cart', or is the inventory check only performed at the point of checkout payment confirmation?",
+          "why_it_matters": "If inventory is checked at add-to-cart time, out-of-stock scenarios require test cases at that step. If only at checkout, a user could fill a cart with unavailable items, requiring a different error-handling test path at payment.",
+          "priority": "HIGH"
+        },
+        {
+          "question": "Which specific credit card networks must be supported at checkout \u2014 Visa, Mastercard, American Express, Discover, or others? Are prepaid or virtual cards required to be accepted or explicitly rejected?",
+          "why_it_matters": "Each supported card network requires its own test case with a valid test card number. Without a defined list, test coverage cannot be confirmed as complete and edge cases like Amex's 15-digit format may be untested.",
+          "priority": "MEDIUM"
+        },
+        {
+          "question": "Does the product star rating displayed in the catalog come from user reviews submitted on this platform, from an external data source, or both? If from this platform, is there a minimum number of reviews required before a rating is shown?",
+          "why_it_matters": "The rating filter acceptance criteria require knowing what value is being filtered. If a product has zero reviews, it is unknown whether it should appear under a 4-star filter, and a minimum review threshold changes display logic entirely.",
+          "priority": "MEDIUM"
+        },
+        {
+          "question": "Are discount codes single-use per customer, single-use globally, or unlimited? Is there an expiry date mechanism, and if a code is expired, should the error message say 'invalid code' or specifically 'expired code'?",
+          "why_it_matters": "Single-use enforcement and expiry are separate code paths requiring separate negative test cases. The error message wording affects UI assertion strings in automated tests.",
+          "priority": "MEDIUM"
+        },
+        {
+          "question": "When a user who registered via Google or Facebook OAuth wants to reset their credentials or unlink their social account, is there a defined flow for that, and can they set a platform password after OAuth registration?",
+          "why_it_matters": "Without a recovery path for OAuth accounts, any session invalidation or provider-side revocation permanently locks out the user. This is flagged as a risk but needs a confirmed resolution to determine whether test coverage is required.",
+          "priority": "MEDIUM"
+        },
+        {
+          "question": "If a guest user with items in their cart logs in or creates an account, should the guest cart items be merged into their account cart, replaced by their account cart, or discarded?",
+          "why_it_matters": "Cart merge-on-login is a distinct user journey that requires its own acceptance criteria and test cases. Without a defined behavior, implementation will be inconsistent and untestable.",
+          "priority": "MEDIUM"
+        },
+        {
+          "question": "Is there a maximum number of items or a maximum total quantity allowed in a single cart?",
+          "why_it_matters": "Without a defined cart limit, boundary value testing cannot be performed and edge cases like adding 9999 units of one product have no defined expected behavior.",
+          "priority": "LOW"
+        },
+        {
+          "question": "Should the order confirmation page and order ID be accessible again after the user navigates away \u2014 for example, via an order history page or confirmation email \u2014 or is the confirmation displayed only once at the end of checkout?",
+          "why_it_matters": "If order confirmation is shown only once, a test for page refresh or back-navigation behavior is needed. If it is accessible via order history, that implies an Order History feature that is currently undocumented.",
+          "priority": "LOW"
+        }
+      ],
+      "suggestions": [
+        "Split this single user story into at least four separate stories \u2014 Registration & Authentication, Product Catalog & Search, Cart Management, and Checkout & Payment \u2014 to reduce scope per story and enable independent sprint delivery and testing",
+        "Add explicit acceptance criteria for the password reset flow, which is identified as a risk but has no corresponding story or criteria, leaving users with no account recovery path",
+        "Define a non-functional requirements section covering PCI-DSS compliance stance, GDPR data handling obligations, and rate limiting rules for registration endpoints, as these affect architecture decisions and security test scope",
+        "Add acceptance criteria for the cart merge behavior when a guest user logs in, as this is a high-traffic user journey with no current coverage",
+        "Specify the verification email template content and the expiry duration of the verification link, as these are required for negative test cases such as clicking an expired verification link",
+        "Add an explicit acceptance criterion for what happens when a user attempts to check out with an item that has gone out of stock between add-to-cart and payment, covering the inventory risk currently noted but untested",
+        "Elevate the testability score assessment to reflect that resolution of the five blocking issues would bring the score to approximately 8, giving the team a clear target for what must be resolved before development kickoff",
+        "Include a data schema definition for Product entity specifying required versus optional fields, as inconsistent product data will cause unpredictable behavior in category and price range filters"
+      ],
+      "processed_at": "2026-04-25T00:51:45.138101"
+    }
+  ],
+  "total_processed": 1,
+  "processed_at": "2026-04-25T00:51:45.138567"
+}
