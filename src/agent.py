@@ -120,6 +120,150 @@ class RequirementsAgent:
 
         return result
 
+    def process_with_rag(self, raw_requirement: str) -> dict:
+        """
+        Full RAG pipeline — processes a requirement WITH context
+        from previously stored requirements.
+
+        RAG = Retrieval Augmented Generation:
+          R → Retrieve related requirements from ChromaDB
+          A → Augment Claude prompt with retrieved context  
+          G → Generate cross-requirement intelligence
+
+        Difference from process():
+          process()          → analyzes requirement in isolation
+          process_with_rag() → analyzes WITH related requirements
+                               → detects conflicts automatically
+                               → detects duplications automatically
+                               → detects dependencies automatically
+
+        Args:
+            raw_requirement: messy client text
+
+        Returns:
+            dict: same as process() but with cross-requirement
+                  intelligence added
+        """
+
+        print(f"\n{'─'*60}")
+        print(f"  Processing with RAG context...")
+        print(f"{'─'*60}")
+
+        # ── Step 1: Quick parse to get search query ────────────
+        # We need the user story to search ChromaDB meaningfully
+        # We use parser directly to avoid storing this early parse
+        print(f"\n  [R] Retrieving — searching ChromaDB...")
+
+        from src.parser import parse_requirement as _parse
+        from src.storage import search_requirements
+
+        try:
+            initial = _parse(raw_requirement)
+            search_query = initial.get('user_story', raw_requirement)
+        except Exception:
+            search_query = raw_requirement[:200]
+
+        # ── Step 2: RETRIEVE related from ChromaDB ─────────────
+        related = search_requirements(
+            query=search_query,
+            project_name=self.project_name,
+            n_results=3
+        )
+
+        print(f"     Found {len(related)} related requirements")
+
+        if related:
+            for r in related:
+                meta = r['metadata']
+                story = meta.get('user_story', '')[:60]
+                dist = r.get('distance', 0)
+                print(f"     → [{meta.get('status')}] "
+                      f"{story}... (similarity: {1-dist:.0%})")
+
+        # ── Step 3: AUGMENT prompt with context ────────────────
+        print(f"\n  [A] Augmenting — injecting context into prompt...")
+
+        context = ""
+
+        if related:
+            context = """
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CROSS-REQUIREMENT CONTEXT (from project knowledge base):
+These are related requirements already in the system.
+Use them to detect conflicts, duplications, dependencies.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+            for i, r in enumerate(related, 1):
+                meta = r['metadata']
+                context += f"""
+[Related Requirement {i}]
+User Story:  {meta.get('user_story', 'N/A')}
+Status:      {meta.get('status', 'N/A')}
+Score:       {meta.get('testability_score', 0)}/10
+ID:          {r['id']}
+"""
+
+            context += """
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CROSS-REQUIREMENT ANALYSIS INSTRUCTIONS:
+When analyzing the new requirement above:
+
+1. CONFLICT: Does it contradict any related requirement?
+   Example: "sessions last 30 days" vs "sessions expire
+   on password reset" — these conflict.
+   → Add conflict to ambiguities with reference ID
+
+2. DUPLICATION: Is it essentially the same requirement?
+   Example: two requirements both about login with email.
+   → Flag in ambiguities: "Possible duplication of [ID]"
+
+3. DEPENDENCY: Does it depend on a related requirement?
+   Example: "remember me" depends on "session management"
+   → Add to dependencies with reference ID
+
+4. GAP: Do related requirements reveal missing ACs?
+   Example: related req has password complexity rules
+   but new req doesn't mention them.
+   → Add missing ACs based on related requirements
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+        augmented = f"""NEW REQUIREMENT TO ANALYZE:
+{raw_requirement}
+{context}"""
+
+        words_added = len(context.split()) if context else 0
+        print(f"     Context size: {words_added} words added to prompt")
+
+        # ── Step 4: GENERATE with augmented context ────────────
+        print(f"\n  [G] Generating — Claude reasoning with context...")
+
+        result = self.process(augmented)
+
+        # ── Add RAG metadata to result ─────────────────────────
+        result['rag_context'] = {
+            'related_requirements_found': len(related),
+            'related_ids': [r['id'] for r in related],
+            'context_used': len(related) > 0,
+            'search_query': search_query[:100]
+        }
+
+        # ── Summary ────────────────────────────────────────────
+        print(f"\n{'─'*60}")
+        if len(related) > 0:
+            print(f"  🧠 RAG active — analyzed against "
+                  f"{len(related)} related requirements")
+            print(f"  Check ambiguities for:")
+            print(f"    → CONFLICT flags")
+            print(f"    → DUPLICATION flags")
+            print(f"    → DEPENDENCY flags")
+        else:
+            print(f"  ℹ️  No related requirements found")
+            print(f"     First requirement — no RAG context yet")
+            print(f"     RAG gets smarter as more reqs are added")
+
+        return result
 
     def find_related(self, query: str, n: int = 3) -> list:
         """

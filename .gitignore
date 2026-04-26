@@ -1,5 +1,7 @@
-# Environment variables - NEVER commit your API key
+# Environment variables - NEVER commit real values like API KEYS
 .env
+.env.staging
+.env.production
 
 # Python
 __pycache__/
