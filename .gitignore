@@ -35,3 +35,5 @@ session_output.json
 
 # ChromaDB local database
 chroma_db/
+
+verification_output.json
