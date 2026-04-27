@@ -37,3 +37,4 @@ session_output.json
 chroma_db/
 
 verification_output.json
+tickets_output.json
